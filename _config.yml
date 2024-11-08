@@ -23,8 +23,8 @@ email: ...
 description: >- # this means to ignore newlines until "baseurl:"
   Feel free to contact me anytime.
   欢迎随时联系。
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
+baseurl: "/" # the subpath of your site, e.g. /blog
+url: "https://gorougd.github.io/zshifp/" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: 
 github_username:  gorougd
 
