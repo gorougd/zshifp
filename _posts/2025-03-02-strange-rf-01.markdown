@@ -1,0 +1,20 @@
+---
+layout: post
+title:  "Yet another AD9361 SDR"
+date:   2024-03-02 10:10:10 -0800
+
+---
+![nopicture!!!]({{"/assets/images/0001sdr1.jpg" | relative_url}})
+####
+`This is yet another AD9361 SDR, but without the ZYNQ`
+
+The classical AD9361+ZYNQ7010/7020 design is quite overdone. Like the ADI's pluto - and many other SDR projects, they all use the same pluto firmware. Since the ADI firmware is known good, the developer does not need to worry about the algorithm and such, only the layout of hardware. This does not seem too fun, and optimized designs are already existent. Therefore, I would like to try a more from scratch implementation - using a Cyclone IV FPGA for the digital section.
+
+***
+![nopicture!!!]({{"/assets/images/0002sdr1.jpg" | relative_url}})
+
+
+![nopicture!!!]({{"/assets/images/0003sdr1.jpg" | relative_url}})
+
+
+
