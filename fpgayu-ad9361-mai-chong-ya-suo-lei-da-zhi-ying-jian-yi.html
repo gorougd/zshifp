@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" prefix="og: http://ogp.me/ns# fb: https://www.facebook.com/2008/fbml">
+<head>
+    <title>FPGA与AD9361 - 脉冲压缩雷达之硬件（一） - zsfp</title>
+    <!-- Using the latest rendering mode for IE -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+<link rel="canonical" href="/fpgayu-ad9361-mai-chong-ya-suo-lei-da-zhi-ying-jian-yi.html">
+
+        <meta name="author" content="gorougd" />
+        <meta name="description" content="用Cyclone IV和AD9361实现的SDR制脉冲压缩雷达，可能会一直鸽下去。。。 前言 DIY的微波雷达使用FMCW的结构可能更常见些。FMCW架构常见于汽车ADAS等短距离场景中，有着极好的距离和速度精度，但由于其同时收发的特性因此不适合大功率的远距离 …" />
+
+        <meta property="og:site_name" content="zsfp" />
+        <meta property="og:type" content="article"/>
+        <meta property="og:title" content="FPGA与AD9361 - 脉冲压缩雷达之硬件（一）"/>
+        <meta property="og:url" content="/fpgayu-ad9361-mai-chong-ya-suo-lei-da-zhi-ying-jian-yi.html"/>
+        <meta property="og:description" content="用Cyclone IV和AD9361实现的SDR制脉冲压缩雷达，可能会一直鸽下去。。。 前言 DIY的微波雷达使用FMCW的结构可能更常见些。FMCW架构常见于汽车ADAS等短距离场景中，有着极好的距离和速度精度，但由于其同时收发的特性因此不适合大功率的远距离 …"/>
+        <meta property="article:published_time" content="2025-04-01" />
+            <meta property="article:section" content="工程" />
+            <meta property="article:author" content="gorougd" />
+
+
+
+    <!-- Bootstrap -->
+        <link rel="stylesheet" href="/theme/css/bootstrap.min.css" type="text/css"/>
+    <link href="/theme/css/font-awesome.min.css" rel="stylesheet">
+
+    <link href="/theme/css/pygments/native.css" rel="stylesheet">
+    <link rel="stylesheet" href="/theme/css/style.css" type="text/css"/>
+
+
+
+
+</head>
+<body>
+
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="/" class="navbar-brand">
+zsfp            </a>
+        </div>
+        <div class="collapse navbar-collapse navbar-ex1-collapse">
+            <ul class="nav navbar-nav">
+                        <li >
+                            <a href="/category/about.html">About</a>
+                        </li>
+                        <li class="active">
+                            <a href="/category/gong-cheng.html">工程</a>
+                        </li>
+                        <li >
+                            <a href="/category/za-ji.html">杂记</a>
+                        </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+            </ul>
+        </div>
+        <!-- /.navbar-collapse -->
+    </div>
+</div> <!-- /.navbar -->
+
+<!-- Banner -->
+<!-- End Banner -->
+
+<!-- Content Container -->
+<div class="container">
+    <div class="row">
+        <div class="col-sm-9">
+    <section id="content">
+        <article>
+            <header class="page-header">
+                <h1>
+                    <a href="/fpgayu-ad9361-mai-chong-ya-suo-lei-da-zhi-ying-jian-yi.html"
+                       rel="bookmark"
+                       title="Permalink to FPGA与AD9361 - 脉冲压缩雷达之硬件（一）">
+                        FPGA与AD9361 - 脉冲压缩雷达之硬件（一）
+                    </a>
+                </h1>
+            </header>
+            <div class="entry-content">
+                <div class="panel">
+                    <div class="panel-body">
+<footer class="post-info">
+    <span class="label label-default">Date</span>
+    <span class="published">
+        <i class="fa fa-calendar"></i><time datetime="2025-04-01T10:10:00+02:00"> Tue 01 April 2025</time>
+    </span>
+
+
+
+
+
+    
+</footer><!-- /.post-info -->                    </div>
+                </div>
+                <p><code>用Cyclone IV和AD9361实现的SDR制脉冲压缩雷达，可能会一直鸽下去。。。</code></p>
+<h3>前言</h3>
+<p>DIY的微波雷达使用FMCW的结构可能更常见些。FMCW架构常见于汽车ADAS等短距离场景中，有着极好的距离和速度精度，但由于其同时收发的特性因此不适合大功率的远距离场合。FMCW通常使用一种扫频输出，例如线性扫频 - 输出频率和时间正相关。这种形式可以用简单的电压调制VCO实现，则基带的电压扫频波形会直接映射在频域，不需要复杂的DDS或者其他高级技术。FMCW的收发是同时进行的，由于所接收的信号会与发射时产生一个时间差，又因输出频率一直在线性变化，由此只要知道该频率差，就可推算出时间差 - 从而得到距离。在实际工程应用中，由于接收机的前端并不与发射机完美隔离，因此发射功率不可太大，否则泄露的发射型号会使得接收机饱和。</p>
+<h3>设计目标</h3>
+<ul>
+<li>基带：Cyclone IV FPGA （EP4CEF15）</li>
+<li>接口：千兆以太网 RGMII RTL8211F</li>
+<li>射频：AD9361 / AD9363</li>
+<li>射频前端： 输出功率 100W （脉冲，占空比0.1% - 1%）</li>
+</ul>
+<h3>硬件设计</h3>
+<p>又是快乐的画板子时间～</p>
+<p>Cyclone IV之前画了很多版本了，希望不要再犯傻狗错误。
+几项需要注意的事：Cyclone IV有三个电源轨，VCCIO, 2.5V, 1.2V
+1.2V是核心电压 - 需要注意线宽足够。
+2.5V是模拟电压 - 这里的模拟指的是芯片内部PLL之类的，必须要接。
+VCCIO需要注意和以太网MAC和AD9361一致。</p>
+<h4>选型</h4>
+<p>为了省事打开立创。发现一打折三路BUCK，那就用它吧！
+TPS65261基本就是三个BUCK做在一起，其中两路的开关波形有180度的相位差，据说可以减轻EMC。15k LE的Cyclone IV算是个小虾米，不需要太多电流，这块能到3A的片子够用了。</p>
+<p>电感：接着用室友的高级货，烧结的1008电感，3A足够了。</p>
+<p><img alt="bearing balls" src="/00bike01.jpg" title="轴承珠子"></p>
+            </div>
+            <!-- /.entry-content -->
+        </article>
+    </section>
+
+        </div>
+        <div class="col-sm-3" id="sidebar">
+            <aside>
+<!-- Sidebar -->
+<section class="well well-sm">
+  <ul class="list-group list-group-flush">
+  </ul>
+</section>
+<!-- End Sidebar -->            </aside>
+        </div>
+    </div>
+</div>
+<!-- End Content Container -->
+
+<footer>
+   <div class="container">
+      <hr>
+      <div class="row">
+         <div class="col-xs-10">&copy; 2025 gorougd
+            &middot; Powered by <a href="https://github.com/getpelican/pelican-themes/tree/master/pelican-bootstrap3" target="_blank">pelican-bootstrap3</a>,
+            <a href="http://docs.getpelican.com/" target="_blank">Pelican</a>,
+            <a href="http://getbootstrap.com" target="_blank">Bootstrap</a>         </div>
+         <div class="col-xs-2"><p class="pull-right"><i class="fa fa-arrow-up"></i> <a href="#">Back to top</a></p></div>
+      </div>
+   </div>
+</footer>
+<script src="/theme/js/jquery.min.js"></script>
+
+<!-- Include all compiled plugins (below), or include individual files as needed -->
+<script src="/theme/js/bootstrap.min.js"></script>
+
+<!-- Enable responsive features in IE8 with Respond.js (https://github.com/scottjehl/Respond) -->
+<script src="/theme/js/respond.min.js"></script>
+
+
+
+
+</body>
+</html>
